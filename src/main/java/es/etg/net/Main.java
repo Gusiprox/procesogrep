@@ -7,32 +7,44 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class Main {
 
+    public static final String FILTRO = "host*";
+    public static final String DIRECTORIO = "//etc";
+
+    public static final String MSG_CORRECTO = "La lista filtrada es: ";
     public static final String MSG_ERROR = "Se ha producido un error al ejecutar el comando";
-
-
+    
     public static final String SALTO_DE_LINEA = "\n";
 
     public static void main(String[] args) {
 
-        final String[] COMANDOS = {"grep", "PSP"};
+        final String[] COMANDO_LS = {"ls", DIRECTORIO};
+        String salidaLs[];
 
-        String salida;
+        final String[] COMANDO_GREP = {"grep", FILTRO};
+        String salidaGrep[];
 
-        salida = ejecCommand(COMANDOS, new String[]{"algo en PSP","algo sin", "Otra vez algo con PSP"});
-        
+        salidaLs = ejecCommand(COMANDO_LS, null);
+
+        salidaGrep = ejecCommand(COMANDO_GREP, salidaLs);
+
+        System.out.println(MSG_CORRECTO + Arrays.toString(salidaGrep));
+
     }
 
-    private static String ejecCommand(String[] comando, String[] writeInProcess){
+    private static String[] ejecCommand(String[] comando, String[] writeInProcess){
         
-        String ERROR_VALUE = "";
+        String[] ERROR_VALUE = {""};
         
         try {
             Process process = Runtime.getRuntime().exec(comando);
-            String output;
-            String errOutput;
+            String output[];
+            String errOutput[];
 
             if (writeInProcess != null) write(process.getOutputStream(), writeInProcess);
 
@@ -47,7 +59,7 @@ public class Main {
             } else {
 
                 System.err.println(MSG_ERROR);
-                System.err.println(errOutput);
+                System.err.println(Arrays.toString(errOutput));
                 return ERROR_VALUE;
             }
 
@@ -58,14 +70,19 @@ public class Main {
         }
     }
 
-    private static String read(InputStream is) throws IOException {
+    private static String[] read(InputStream is) throws IOException {
+
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-            StringBuilder output = new StringBuilder();
+
+            List<String> output = new ArrayList<>();
             String line;
+
             while ((line = reader.readLine()) != null) {
-                output.append(line).append(System.lineSeparator());
+                output.add(line);
             }
-            return output.toString();
+            //Revisar si esto funciona bien
+            return output.toArray(String[]::new);
+
         }
     }
 
