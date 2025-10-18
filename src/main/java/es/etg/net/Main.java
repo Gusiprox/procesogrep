@@ -7,12 +7,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class Main {
 
+    public static final String COMANDO_A_USAR = "ls";
     public static final String FILTRO = "host*";
     public static final String DIRECTORIO = "//etc";
 
@@ -21,30 +19,51 @@ public class Main {
     
     public static final String SALTO_DE_LINEA = "\n";
 
+    public static final int SALIDA_SYSTEM = 34;
+
     public static void main(String[] args) {
 
-        final String[] COMANDO_LS = {"ls", DIRECTORIO};
-        String salidaLs[];
+        final String[] COMANDO_ENVIADO = {COMANDO_A_USAR, DIRECTORIO};
+        String salidaEnviado[];
 
         final String[] COMANDO_GREP = {"grep", FILTRO};
         String salidaGrep[];
 
-        salidaLs = ejecCommand(COMANDO_LS, null);
+        final int SALIDA_NORMAL = 0; 
+        final int SALIDA_FALLIDA = 1; 
 
-        salidaGrep = ejecCommand(COMANDO_GREP, salidaLs);
 
-        System.out.println(MSG_CORRECTO + Arrays.toString(salidaGrep));
+        salidaEnviado = ejecCommand(COMANDO_ENVIADO, null);
+        if (salidaEnviado.length != 1) {
+
+            String[] datos = {MSG_ERROR, salidaEnviado[SALIDA_NORMAL], salidaEnviado[SALIDA_FALLIDA]};
+            System.out.println(crearSalida(datos));
+
+            System.exit(SALIDA_SYSTEM);
+        }
+
+        salidaGrep = ejecCommand(COMANDO_GREP, salidaEnviado);
+
+        if (salidaEnviado.length != 1) {
+
+            String[] datos = {MSG_ERROR, salidaGrep[SALIDA_NORMAL], salidaGrep[SALIDA_FALLIDA]};
+            System.out.println(crearSalida(datos));
+
+            System.exit(SALIDA_SYSTEM);
+        }
+
+        System.out.println(crearSalida(new String[]{MSG_CORRECTO, salidaGrep[SALIDA_NORMAL]}));
 
     }
 
     private static String[] ejecCommand(String[] comando, String[] writeInProcess){
         
-        String[] ERROR_VALUE = {""};
+        final String ERROR_VALUE = "Error al ejecutar el comando";
         
         try {
             Process process = Runtime.getRuntime().exec(comando);
-            String output[];
-            String errOutput[];
+            String output;
+            String errOutput;
 
             if (writeInProcess != null) write(process.getOutputStream(), writeInProcess);
 
@@ -54,34 +73,33 @@ public class Main {
             int exitVal = process.waitFor();
             if (exitVal == 0) {
 
-                return output;
+                return new String[] {output};
 
             } else {
 
-                System.err.println(MSG_ERROR);
-                System.err.println(Arrays.toString(errOutput));
-                return ERROR_VALUE;
+                return new String[] {output, errOutput};
             }
 
         } catch (IOException | InterruptedException e) {
-            System.err.println("Error" + e);
-            return ERROR_VALUE;
+
+            return new String[]{ERROR_VALUE, e.toString()};
 
         }
     }
 
-    private static String[] read(InputStream is) throws IOException {
+    private static String read(InputStream is) throws IOException {
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
 
-            List<String> output = new ArrayList<>();
+            //List<String> output = new ArrayList<>();
+            StringBuilder output = new StringBuilder();
             String line;
 
             while ((line = reader.readLine()) != null) {
-                output.add(line);
+                output.append(line).append(SALTO_DE_LINEA);
             }
-            //Revisar si esto funciona bien
-            return output.toArray(String[]::new);
+
+            return output.toString();
 
         }
     }
@@ -97,5 +115,17 @@ public class Main {
             writer.flush();
 
         }
+    }
+
+    private static String crearSalida(String[] datos){
+
+        StringBuilder salida = new StringBuilder();
+
+        for (String string : datos) {
+            salida.append(string).append(SALTO_DE_LINEA);
+        }
+
+        return salida.toString();
+
     }
 }
