@@ -5,58 +5,60 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
 public class Main {
-    public static final String MSG_ERROR = "Se ha producido un error al ejecutar el comando";
-    public static final String[] COMANDOS = {"grep", "PSP"};
 
-    public static final String[] MENSAJE_A_GREP = { 
-        "Me gusta PSP y java",
-        "PSP se programa en java",
-        "es un módulo de DAM",
-        "y se programa de forma concurrente en PSP",
-        "PSP es programación"
-    };
+    public static final String MSG_ERROR = "Se ha producido un error al ejecutar el comando";
+
 
     public static final String SALTO_DE_LINEA = "\n";
 
-
     public static void main(String[] args) {
 
-		try {
-			Process process = Runtime.getRuntime().exec(COMANDOS);
-			String output;
+        final String[] COMANDOS = {"grep", "PSP"};
 
-            try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()))) {
-                    
-                for (String line : MENSAJE_A_GREP) {
-                    writer.write(line);
-                    writer.newLine();
-                }
-                writer.flush();
-                
+        String salida;
+
+        salida = ejecCommand(COMANDOS, new String[]{"algo en PSP","algo sin", "Otra vez algo con PSP"});
+        
+    }
+
+    private static String ejecCommand(String[] comando, String[] writeInProcess){
+        
+        String ERROR_VALUE = "";
+        
+        try {
+            Process process = Runtime.getRuntime().exec(comando);
+            String output;
+            String errOutput;
+
+            if (writeInProcess != null) write(process.getOutputStream(), writeInProcess);
+
+            errOutput = read(process.getErrorStream());
+            output = read(process.getInputStream());
+
+            int exitVal = process.waitFor();
+            if (exitVal == 0) {
+
+                return output;
+
+            } else {
+
+                System.err.println(MSG_ERROR);
+                System.err.println(errOutput);
+                return ERROR_VALUE;
             }
 
-            readStream(process.getErrorStream());
-			output = readStream(process.getInputStream());
+        } catch (IOException | InterruptedException e) {
+            System.err.println("Error" + e);
+            return ERROR_VALUE;
 
-			int exitVal = process.waitFor();
-			if (exitVal == 0) {
-				System.out.println(output);
-				System.exit(0);
-			} else {
-				System.out.println(MSG_ERROR);
-				System.exit(1);
-			}
+        }
+    }
 
-		} catch (IOException | InterruptedException e) {
-		    System.out.println("Error"+ e);
-		    System.exit(34);
-		}
-	}
-
-    private static String readStream(InputStream is) throws IOException {
+    private static String read(InputStream is) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
             StringBuilder output = new StringBuilder();
             String line;
@@ -64,6 +66,19 @@ public class Main {
                 output.append(line).append(System.lineSeparator());
             }
             return output.toString();
+        }
+    }
+
+    private static void write(OutputStream os, String[] mensaje) throws IOException{
+
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os))) {
+
+            for (String line : mensaje) {
+                writer.write(line);
+                writer.newLine();
+            }
+            writer.flush();
+
         }
     }
 }
